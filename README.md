@@ -13,6 +13,12 @@ You can then later update it from the source again via:
 git subtree pull --squash --prefix plugins/rum-conversion git@github.com:adobe/franklin-rum-conversion.git main
 ```
 
+:warning: **If you are using a folder as a franklin docroot/codeBasePath**: you should add it in the prefix on the commands above.
+e.g.:
+```
+git subtree add --squash --prefix docroot/plugins/rum-conversion git@github.com:adobe/franklin-rum-conversion.git main
+```
+
 ## Initialization
 In your `script.js` find the method `loadLazy()`.
 At the end of the method add the following code:
