@@ -2,6 +2,31 @@
 
 Adds conversion tracking functionality to Helix RUM Collection (client-side)
 
+## Installation
+
+```bash
+git subtree add --squash --prefix plugins/rum-conversion git@github.com:adobe/franklin-rum-conversion.git main
+```
+
+You can then later update it from the source again via:
+```bash
+git subtree pull --squash --prefix plugins/rum-conversion git@github.com:adobe/franklin-rum-conversion.git main
+```
+
+## Initialization
+In your `script.js` find the method `loadLazy()`.
+At the end of the method add the following code:
+
+```
+  const context = {
+    getMetadata,
+    toClassName,
+  };
+  const { initConversionTracking } = await import('../plugins/rum-conversion/src/index.js');
+  initConversionTracking.call(context, document, '');
+```
+Please, note that `getMetadata` and `toClassName` methods should be imported from `lib-franklin.js` in your `script.js`
+
 ## Usage
 
 At the moment, the conversion tracking that is used to report conversions to RUM is both too broad and too narrow.
@@ -70,18 +95,3 @@ This method has 2 modes:
 
 ### Integration with Adobe Data Layer
 After any conversion is registered in the RUM the conversion is also pushed to the Adobe Data Layer so it can be tracked by other products such as Adobe Analytics.
-
-
-## Development
-
-### Build
-
-```bash
-$ npm install
-```
-
-### Lint
-
-```bash
-$ npm run lint
-```

@@ -10,7 +10,13 @@
  * governing permissions and limitations under the License.
  */
 const { sampleRUM } = window.hlx.rum;
-
+// SampleRUM always initialization should happen in lib-franklin
+// we need to initialize it here until the initialization is part of
+// the boilerplate.
+sampleRUM.always = sampleRUM.always || [];
+sampleRUM.always.on = (chkpnt, fn) => {
+  sampleRUM.always[chkpnt] = fn;
+};
 /**
  * Returns the label used for tracking link clicks
  * @param {Element} element link element
@@ -28,10 +34,10 @@ function findConversionValue(parent, fieldName) {
   }
   // Find the element by the inner text of the label
   return Array.from(parent.getElementsByTagName('label'))
-    .filter(l => l.innerText.trim().toLowerCase() === fieldName.toLowerCase())
-    .map(label => document.getElementById(label.htmlFor))
-    .filter(field => !!field)
-    .map(field => field.value)
+    .filter((l) => l.innerText.trim().toLowerCase() === fieldName.toLowerCase())
+    .map((label) => document.getElementById(label.htmlFor))
+    .filter((field) => !!field)
+    .map((field) => field.value)
     .pop();
 }
 
@@ -40,7 +46,8 @@ function findConversionValue(parent, fieldName) {
  * @param {Element} parent element where to find potential event conversion sources
  * @param {string} path fragment path when the parent element is coming from a fragment
  */
-export async function initConversionTracking(parent, path) {
+// eslint-disable-next-line import/prefer-default-export
+export async function initConversionTracking(parent = document, path = '') {
   const conversionElements = {
     form: () => {
       // Track all forms
@@ -48,7 +55,8 @@ export async function initConversionTracking(parent, path) {
         const section = element.closest('div.section');
         if (section.dataset.conversionValueField) {
           const cvField = section.dataset.conversionValueField.trim();
-          // this will track the value of the element with the id specified in the "Conversion Element" field.
+          // this will track the value of the element with the id specified in
+          // the "Conversion Element" field.
           // ideally, this should not be an ID, but the case-insensitive name label of the element.
           sampleRUM.convert(undefined, (cvParent) => findConversionValue(cvParent, cvField), element, ['submit']);
         }
@@ -64,15 +72,15 @@ export async function initConversionTracking(parent, path) {
     link: () => {
       // track all links
       Array.from(parent.querySelectorAll('a[href]'))
-        .map(element => ({
+        .map((element) => ({
           element,
-          cevent: this.getMetadata(`conversion-name--${getLinkLabel(this, element)}-`) || this.getMetadata('conversion-name') || getLinkLabel(this, element),
+          cevent: this.getMetadata(`conversion-name--${getLinkLabel.call(this, element)}-`) || this.getMetadata('conversion-name') || getLinkLabel.call(this, element),
         }))
         .forEach(({ element, cevent }) => {
-          sampleRUM.convert(cevent, undefined, element, ['click'])
+          sampleRUM.convert(cevent, undefined, element, ['click']);
         });
     },
-    'labeled-link': () => {
+    'labelled-link': () => {
       // track only the links configured in the metadata
       const linkLabels = this.getMetadata('conversion-link-labels') || '';
       const trackedLabels = linkLabels.split(',')
@@ -80,15 +88,15 @@ export async function initConversionTracking(parent, path) {
         .map(this.toClassName);
 
       Array.from(parent.querySelectorAll('a[href]'))
-        .filter((element) => trackedLabels.includes(getLinkLabel(this, element)))
-        .map(element => ({
+        .filter((element) => trackedLabels.includes(getLinkLabel.call(this, element)))
+        .map((element) => ({
           element,
-          cevent: this.getMetadata(`conversion-name--${getLinkLabel(this, element)}-`) || this.getMetadata('conversion-name') || getLinkLabel(this, element),
+          cevent: this.getMetadata(`conversion-name--${getLinkLabel.call(this, element)}-`) || this.getMetadata('conversion-name') || getLinkLabel.call(this, element),
         }))
         .forEach(({ element, cevent }) => {
           sampleRUM.convert(cevent, undefined, element, ['click']);
         });
-    }
+    },
   };
 
   const declaredConversionElements = this.getMetadata('conversion-element') ? this.getMetadata('conversion-element').split(',').map((ce) => this.toClassName(ce.trim())) : [];
@@ -122,7 +130,13 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
       }
       // send conversion event
       const cvalue = typeof cvalueThunk === 'function' ? await cvalueThunk(element) : cvalueThunk;
-      sampleRUM('convert', { source: cevent, target: cvalue, element: celement });
+
+      const data = { source: cevent, target: cvalue, element: celement };
+      sampleRUM('convert', data);
+      // Following if statement must be removed once always mechanism is present in the boilerplate
+      if (sampleRUM.always.convert) {
+        sampleRUM.always.convert(data);
+      }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log('error reading experiments', e);
@@ -132,9 +146,10 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
   function registerConversionListener(elements) {
     // if elements is an array or nodelist, register a conversion event for each element
     if (Array.isArray(elements) || elements instanceof NodeList) {
-      elements.forEach(e => registerConversionListener(e, listenTo, cevent, cvalueThunk));
+      elements.forEach((e) => registerConversionListener(e, listenTo, cevent, cvalueThunk));
     } else {
-      listenTo.forEach(eventName => element.addEventListener(eventName, (e) => trackConversion(e.target)));
+      listenTo.forEach((eventName) => element.addEventListener(
+        eventName, (e) => trackConversion(e.target)));
     }
   }
 
@@ -152,23 +167,23 @@ sampleRUM.always.on('convert', (data) => {
     let evtDataLayer;
     if (element.tagName === 'FORM') {
       evtDataLayer = {
-        event: "Form Complete",
+        event: 'Form Complete',
         forms: {
           formsComplete: 1,
           formName: data.source, // this is the conversion event name
           conversionValue: data.target,
           formId: element.id,
-          formsType: ""
-        }
+          formsType: '',
+        },
       };
     } else if (element.tagName === 'A') {
       evtDataLayer = {
-        event: "Link Click",
+        event: 'Link Click',
         eventData: {
           linkName: data.source, // this is the conversion event name
           linkText: element.innerHTML,
-          linkHref: element.href
-        }
+          linkHref: element.href,
+        },
       };
     }
     console.debug('push to datalayer', evtDataLayer);
