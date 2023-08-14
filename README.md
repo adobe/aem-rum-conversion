@@ -92,12 +92,89 @@ For more specific requirements it is also possible for developers to invoke the 
 
 `sampleRUM.convert(cevent, cvalueThunk, element, listenTo = []) `
 
-`cevent` is the conversion name `cvalueThunk` can be the conversion value or a function that calculates the conversion value `element` is the element that generates the conversion `listenTo` is the array of events we want to listen to to generate a conversion.
+`cevent` is the conversion name \
+`cvalueThunk` can be the conversion value or a function that calculates the conversion value \
+`element` is the element that generates the conversion \
+`listenTo` is the array of events we want to listen to to generate a conversion. \
 
 This method has 2 modes:
 
 * listener registration mode: If the method is called with `element` and `listenTo` values it will register a listener on the element for the given events, every time the event is triggered a conversion with the given arguments will be tracked.
 * conversion tracking mode: If the method is called with empty `listenTo` it will track a conversion using as conversion name the `cevent` and/or `cvalueThunk` as conversion value.
 
-### Integration with Adobe Data Layer
-After any conversion is registered in the RUM the conversion is also pushed to the Adobe Data Layer so it can be tracked by other products such as Adobe Analytics.
+### Integration with Analytics solutions
+In order to track conversions defined in Franklin in Analytics solutions, you can leverage the method `sampleRUM.always.on('convert', (data) `\
+This method is invoked by the RUM conversion framework after every call to convert method.
+
+It is **important** to note that while RUM data is sampled, in the sense it sends information to the RUM service from a small fraction of page views, this method is invoked for all conversions defined, regardless of whether the conversion event is sent to the RUM service or not.
+
+Below you can find an example implementation for Adobe Analytics WebSDK.
+```
+// Declare conversionEvent, bufferTimeoutId and tempConversionEvent outside the convert function to persist them for buffering between
+// subsequent convert calls
+let bufferTimeoutId;
+let conversionEvent;
+let tempConversionEvent;
+
+// call upon conversion events, sends them to alloy
+sampleRUM.always.on('convert', async (data) => {
+  const { element } = data;
+  // eslint-disable-next-line no-undef
+  if (element && alloy) {
+    if (element.tagName === 'FORM') {
+      conversionEvent = {
+        event: 'Form Complete',
+        ...(data.source ? { conversionName: data.source } : {}),
+        ...(data.target ? { conversionValue: data.target } : {}),
+      };
+
+      if (
+        conversionEvent.event === 'Form Complete' &&
+        (data.target === undefined || data.source === undefined)
+      ) {
+        // If a buffer has already been set and tempConversionEvent exists, merge the two conversionEvent objects to send to alloy
+        if (bufferTimeoutId !== undefined && tempConversionEvent !== undefined) {
+          conversionEvent = { ...tempConversionEvent, ...conversionEvent };
+        } else {
+          // Temporarily hold the conversionEvent object until the timeout is complete
+          tempConversionEvent = { ...conversionEvent };
+
+          // If there is partial form conversion data, set the timeout buffer to wait for additional data
+          bufferTimeoutId = setTimeout(async () => {
+            await analyticsTrackFormSubmission(element, {
+              conversion: {
+                ...(conversionEvent.conversionName
+                  ? { conversionName: `${conversionEvent.conversionName}` }
+                  : {}),
+                ...(conversionEvent.conversionValue
+                  ? { conversionValue: `${conversionEvent.conversionValue}` }
+                  : {}),
+              },
+            });
+            tempConversionEvent = undefined;
+            conversionEvent = undefined;
+          }, 100);
+        }
+      }
+    } else if (element.tagName === 'A') {
+      conversionEvent = {
+        event: 'Link Click',
+        ...(data.source ? { conversionName: data.source } : {}),
+        ...(data.target ? { conversionValue: data.target } : {}),
+      };
+      await analyticsTrackLinkClicks(element, 'other', {
+        conversion: {
+          ...(conversionEvent.conversionName
+            ? { conversionName: `${conversionEvent.conversionName}` }
+            : {}),
+          ...(conversionEvent.conversionValue
+            ? { conversionValue: `${conversionEvent.conversionValue}` }
+            : {}),
+        },
+      });
+      tempConversionEvent = undefined;
+      conversionEvent = undefined;
+    }
+  }
+});
+```
