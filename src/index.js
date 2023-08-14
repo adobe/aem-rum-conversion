@@ -134,7 +134,7 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
       const data = { source: cevent, target: cvalue, element: celement };
       sampleRUM('convert', data);
       // Following if statement must be removed once always mechanism is present in the boilerplate
-      if (sampleRUM.always.convert) {
+      if (sampleRUM.always && sampleRUM.always.convert) {
         sampleRUM.always.convert(data);
       }
     } catch (e) {
@@ -157,36 +157,5 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
     registerConversionListener(element, listenTo, cevent, cvalueThunk);
   } else {
     trackConversion(element, cevent, cvalueThunk);
-  }
-});
-
-// call upon conversion events, pushes them to the datalayer
-sampleRUM.always.on('convert', (data) => {
-  const { element } = data;
-  if (element && window.digitalData) {
-    let evtDataLayer;
-    if (element.tagName === 'FORM') {
-      evtDataLayer = {
-        event: 'Form Complete',
-        forms: {
-          formsComplete: 1,
-          formName: data.source, // this is the conversion event name
-          conversionValue: data.target,
-          formId: element.id,
-          formsType: '',
-        },
-      };
-    } else if (element.tagName === 'A') {
-      evtDataLayer = {
-        event: 'Link Click',
-        eventData: {
-          linkName: data.source, // this is the conversion event name
-          linkText: element.innerHTML,
-          linkHref: element.href,
-        },
-      };
-    }
-    console.debug('push to datalayer', evtDataLayer);
-    window.digitalData.push(evtDataLayer);
   }
 });
