@@ -108,6 +108,8 @@ This method is invoked by the RUM conversion framework after every call to conve
 
 It is **important** to note that while RUM data is sampled, in the sense it sends information to the RUM service from a small fraction of page views, this method is invoked for all conversions defined, regardless of whether the conversion event is sent to the RUM service or not.
 
+The implementation should be provided in your `scripts.js` file. 
+
 Below you can find an example implementation for Adobe Analytics WebSDK.
 ```
 // Declare conversionEvent, bufferTimeoutId and tempConversionEvent outside the convert function to persist them for buffering between
