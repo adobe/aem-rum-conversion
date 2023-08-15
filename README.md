@@ -114,12 +114,15 @@ This method has 2 modes:
 * conversion tracking mode: If the method is called with empty `listenTo` it will track a conversion using as conversion name the `cevent` and/or `cvalueThunk` as conversion value.
 
 ### Integration with Analytics solutions
-In order to track conversions defined in Franklin in Analytics solutions, you can leverage the method `sampleRUM.always.on('convert', (data) `\
-This method is invoked by the RUM conversion framework after every call to convert method.
+In order to track conversions defined in Franklin in Analytics solutions, you can leverage the method `sampleRUM.always.on('convert', (data) => { ... })`\
+This method is invoked by the RUM conversion framework after every call to convert method. The parameter `data` contains the information of the conversion event tracked.
 
 It is **important** to note that while RUM data is sampled, in the sense it sends information to the RUM service from a small fraction of page views, this method is invoked for all conversions defined, regardless of whether the conversion event is sent to the RUM service or not.
 
-The implementation should be provided in your `scripts.js` file.
+The implementation should be provided in your `scripts.js` file, and declared after the call to `initConversionTracking`.
+
+Typical implementations of this method are integration with Adobe Analytics WebSDK or pushing the conversion events to a Data Layer.
+
 
 Below you can find an example implementation for Adobe Analytics WebSDK.
 ```
