@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Adobe. All rights reserved.
+ * Copyright 2023 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -44,10 +44,16 @@ function findConversionValue(parent, fieldName) {
 /**
  * Registers conversion listeners according to the metadata configured in the document.
  * @param {Element} parent element where to find potential event conversion sources
- * @param {string} path fragment path when the parent element is coming from a fragment
+ * @param {string} defaultFormConversionName In case of form conversions, default
+ * name for the conversion in case there is no conversion name defined
+ * in the document or section metadata. If the form is defined in a fragment
+ * this is typically the path to the fragment.
+ * The parameter is optional, if no value is passed, and conversion
+ * name is not defined in the document or section metadata,
+ * the id of the HTML form element will be used as conversion name
  */
 // eslint-disable-next-line import/prefer-default-export
-export async function initConversionTracking(parent = document, path = '') {
+export async function initConversionTracking(parent = document, defaultFormConversionName = '') {
   const conversionElements = {
     form: () => {
       // Track all forms
@@ -60,13 +66,14 @@ export async function initConversionTracking(parent = document, path = '') {
           // ideally, this should not be an ID, but the case-insensitive name label of the element.
           sampleRUM.convert(undefined, (cvParent) => findConversionValue(cvParent, cvField), element, ['submit']);
         }
-        const formConversionName = section.dataset.conversionName || this.getMetadata('conversion-name');
-        if (formConversionName) {
-          sampleRUM.convert(formConversionName, undefined, element, ['submit']);
-        } else {
-          // if no conversion name is specified, use the form path or id
-          sampleRUM.convert(path ? this.toClassName(path) : element.id, undefined, element, ['submit']);
+        let formConversionName = section.dataset.conversionName || this.getMetadata('conversion-name');
+        if (!formConversionName) {
+          // if no conversion name is defined in the metadata,
+          // use the conversion name passed as parameter or the form or id
+          formConversionName = defaultFormConversionName
+            ? this.toClassName(defaultFormConversionName) : element.id;
         }
+        sampleRUM.convert(formConversionName, undefined, element, ['submit']);
       });
     },
     link: () => {
@@ -149,7 +156,9 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
       elements.forEach((e) => registerConversionListener(e, listenTo, cevent, cvalueThunk));
     } else {
       listenTo.forEach((eventName) => element.addEventListener(
-        eventName, (e) => trackConversion(e.target)));
+        eventName,
+        (e) => trackConversion(e.target),
+      ));
     }
   }
 

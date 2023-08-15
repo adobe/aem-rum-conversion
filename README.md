@@ -28,10 +28,21 @@ At the end of the method add the following code:
     getMetadata,
     toClassName,
   };
+  // eslint-disable-next-line import/no-relative-packages
   const { initConversionTracking } = await import('../plugins/rum-conversion/src/index.js');
-  initConversionTracking.call(context, document, '');
+  initConversionTracking.call(context, document);
 ```
 Please, note that `getMetadata` and `toClassName` methods should be imported from `lib-franklin.js` in your `script.js`
+
+:information_source: There are some mechanisms commonly used in Franklin projects, that load in the page content from a different document after the page is fully loaded. e.g.: A contact us form that is displayed in a modal dialog when the user clicks a button.
+If you are using such a mechanism, and you want to track conversions in the piece of content added to the page after it has loaded, you need to initialize conversion tracking for that content once it is loaded in the page.
+
+```
+  initConversionTracking.call(context, fragmentElement, defaultFormConversionName)
+```
+`context` is the  object containing `getMetadata` and `getClassName` methods \
+`fragmentElement` is the HTML Element \
+`defaultFormConversionName` is the name we want to use to track the conversion of a form, when a conversion name is not defined in the section or document metadata. This parameter is optional. Typical use case is to pass the path to the fragment that contains the form.
 
 ## Usage
 
@@ -46,7 +57,7 @@ The conversion names and conversion values can later on be used in reporting the
 ### Practitioner defined conversions
 _**Identifying the user actions to track**_
 
-In order to setup conversions a practitioner must define a metadata property called `Conversion Element` which can have the values: `< Link | Labelled Link | Form >`
+In order to setup conversions a practitioner must define a page metadata property called `Conversion Element` which can have the values: `< Link | Labelled Link | Form >`
 
 * `Link`:  Clicks on any link `<a href="...">` will be tracked as conversions.
 * `Form`: form submissions in the page will be tracked as conversions.
@@ -54,7 +65,7 @@ In order to setup conversions a practitioner must define a metadata property cal
 
 The three values can be combined, although if `Link` is configured, `Labelled Link` would be redundant.
 
-In case of `Conversion Element = Labelled Link`, to define the list of links for which we want to track clicks as conversions we use the metadata property:
+In case of `Conversion Element = Labelled Link`, we can define the list of links for which we want to track clicks as conversions using the metadata property:
 
 * `Conversion Link Labels`:  Comma separated list of link labels that will be tracked as conversions. The link label is the inner text of the link.
 
@@ -77,7 +88,7 @@ While conversion names for link clicks are defined exclusively in the document m
 
 * `Conversion Name`: the value of the property will be used as conversion name to track the form submission.
 
-_By default_ If no conversion name is defined for a form, if the form is included as part of a fragment document, the path of the fragment `toClassName()` is used. Last fallback is the form id.
+_By default_ If no conversion name is defined for a form, neither in section nor in page metadata, developers can still pass a default value in the call to the `initConversionTracking`. Last fallback is the form id.
 
 Practitioners can also define a **conversion value** for form submissions. Conversion value should be a numeric value, and is normally related to the monetary aspect of the conversion. The conversion value is defined with another section metadata property called `Conversion Value Field`, allowed values for this property are:
 
@@ -108,7 +119,7 @@ This method is invoked by the RUM conversion framework after every call to conve
 
 It is **important** to note that while RUM data is sampled, in the sense it sends information to the RUM service from a small fraction of page views, this method is invoked for all conversions defined, regardless of whether the conversion event is sent to the RUM service or not.
 
-The implementation should be provided in your `scripts.js` file. 
+The implementation should be provided in your `scripts.js` file.
 
 Below you can find an example implementation for Adobe Analytics WebSDK.
 ```
