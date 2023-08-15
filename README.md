@@ -30,18 +30,19 @@ At the end of the method add the following code:
   };
   // eslint-disable-next-line import/no-relative-packages
   const { initConversionTracking } = await import('../plugins/rum-conversion/src/index.js');
-  initConversionTracking.call(context, document);
+  await initConversionTracking.call(context, document);
 ```
 Please, note that `getMetadata` and `toClassName` methods should be imported from `lib-franklin.js` in your `script.js`
 
-:information_source: There are some mechanisms commonly used in Franklin projects, that load in the page content from a different document after the page is fully loaded. e.g.: A contact us form that is displayed in a modal dialog when the user clicks a button.
-If you are using such a mechanism, and you want to track conversions in the piece of content added to the page after it has loaded, you need to initialize conversion tracking for that content once it is loaded in the page.
+:information_source: There are some mechanisms commonly used in Franklin projects, that load dynamically in the page, content from a different document after the page has been fully loaded.
+e.g.: A contact us form that is displayed in a modal dialog when the user clicks a button.
+If you are using such a mechanism, that includes extra elements in the DOM after `loadLazy()` and you want to track conversions in this included HTML fragment, you need to initialize conversion tracking for that content once it is loaded in the page.
 
 ```
-  initConversionTracking.call(context, fragmentElement, defaultFormConversionName)
+  await initConversionTracking.call(context, fragmentElement, defaultFormConversionName)
 ```
 `context` is the  object containing `getMetadata` and `getClassName` methods \
-`fragmentElement` is the HTML Element \
+`fragmentElement` is the parent HTML Element included dynamically where we want to track conversions \
 `defaultFormConversionName` is the name we want to use to track the conversion of a form, when a conversion name is not defined in the section or document metadata. This parameter is optional. Typical use case is to pass the path to the fragment that contains the form.
 
 ## Usage
@@ -65,7 +66,7 @@ In order to setup conversions a practitioner must define a page metadata propert
 
 The three values can be combined, although if `Link` is configured, `Labelled Link` would be redundant.
 
-In case of `Conversion Element = Labelled Link`, we can define the list of links for which we want to track clicks as conversions using the metadata property:
+In case of `Conversion Element = Labelled Link`, we can define the list of links for which we want to track clicks as conversions using the page metadata property:
 
 * `Conversion Link Labels`:  Comma separated list of link labels that will be tracked as conversions. The link label is the inner text of the link.
 
@@ -90,11 +91,12 @@ While conversion names for link clicks are defined exclusively in the document m
 
 _By default_ If no conversion name is defined for a form, neither in section nor in page metadata, developers can still pass a default value in the call to the `initConversionTracking`. Last fallback is the form id.
 
-Practitioners can also define a **conversion value** for form submissions. Conversion value should be a numeric value, and is normally related to the monetary aspect of the conversion. The conversion value is defined with another section metadata property called `Conversion Value Field`, allowed values for this property are:
+Practitioners can also define a **conversion value** for form submissions. Conversion value should be a numeric value, and is normally related to the monetary aspect of the conversion.\
+The conversion value is defined with another section metadata property called `Conversion Value Field`, allowed values for this property are:
 
-* Id of the form field whose value we want to use as conversion value
-* Name of the form field whose value we want to use as conversion value
-* Label of the field whose value we want to use as conversion value
+* _Id_ of the form field whose value we want to use as conversion value
+* _Name_ of the form field whose value we want to use as conversion value
+* _Label_ of the field whose value we want to use as conversion value
 
 ![form-conversion-metadata](https://user-images.githubusercontent.com/43381734/218726040-81fb4d04-9a91-495e-a23b-50fcafd86a75.png)
 
@@ -106,11 +108,11 @@ For more specific requirements it is also possible for developers to invoke the 
 `cevent` is the conversion name \
 `cvalueThunk` can be the conversion value or a function that calculates the conversion value \
 `element` is the element that generates the conversion \
-`listenTo` is the array of events we want to listen to to generate a conversion. \
+`listenTo` is the array of events we want to listen to to generate a conversion.
 
 This method has 2 modes:
 
-* listener registration mode: If the method is called with `element` and `listenTo` values it will register a listener on the element for the given events, every time the event is triggered a conversion with the given arguments will be tracked.
+* listener registration mode: If the method is called with `element` and `listenTo` values it will register a listener on the element for the given events. Every time the event is triggered a conversion with the given arguments will be tracked.
 * conversion tracking mode: If the method is called with empty `listenTo` it will track a conversion using as conversion name the `cevent` and/or `cvalueThunk` as conversion value.
 
 ### Integration with Analytics solutions
