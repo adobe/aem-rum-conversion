@@ -58,15 +58,15 @@ The conversion names and conversion values can later on be used in reporting the
 ### Practitioner defined conversions
 _**Identifying the user actions to track**_
 
-In order to setup conversions a practitioner must define a page metadata property called `Conversion Element` which can have the values: `< Link | Labelled Link | Form >`
+In order to setup conversions a practitioner must define a page metadata property called `Conversion Element` which can have the values: `< Link | Labeled Link | Form >`
 
 * `Link`:  Clicks on any link `<a href="...">` will be tracked as conversions.
 * `Form`: form submissions in the page will be tracked as conversions.
-* `Labelled Link`: Only links specified in the metadata property `Conversion Link Labels` will be considered for tracking conversions.
+* `Labeled Link`: Only links specified in the metadata property `Conversion Link Labels` will be considered for tracking conversions.
 
-The three values can be combined, although if `Link` is configured, `Labelled Link` would be redundant.
+The three values can be combined, although if `Link` is configured, `Labeled Link` would be redundant.
 
-In case of `Conversion Element = Labelled Link`, we can define the list of links for which we want to track clicks as conversions using the page metadata property:
+In case of `Conversion Element = Labeled Link`, we can define the list of links for which we want to track clicks as conversions using the page metadata property:
 
 * `Conversion Link Labels`:  Comma separated list of link labels that will be tracked as conversions. The link label is the inner text of the link.
 

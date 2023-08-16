@@ -87,7 +87,7 @@ export async function initConversionTracking(parent = document, defaultFormConve
           sampleRUM.convert(cevent, undefined, element, ['click']);
         });
     },
-    'labelled-link': () => {
+    'labeled-link': () => {
       // track only the links configured in the metadata
       const linkLabels = this.getMetadata('conversion-link-labels') || '';
       const trackedLabels = linkLabels.split(',')
