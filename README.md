@@ -135,6 +135,11 @@ This method has 2 modes:
 * conversion tracking mode: If the method is called with empty `listenTo` it will track a conversion using as conversion name the `cevent` and/or `cvalueThunk` as conversion value.
 
 ### Integration with Analytics solutions
+
+:warning: If you want to make use of the hook described below, you must ensure your `lib-franklin.js` is up to date (not older than 23.08.2023) and contains the changes in these 2 commits:
+* https://github.com/adobe/helix-project-boilerplate/commit/871ede401d2d57c8825f8970f3b28cd9de5f27f8
+* https://github.com/adobe/helix-project-boilerplate/commit/fcca39dd4f5fd2aef6852580873ab4b2cce1e2af
+
 In order to track conversions defined in Franklin in Analytics solutions, you can leverage the method `sampleRUM.always.on('convert', (data) => { ... })`\
 This method is invoked by the RUM conversion framework after every call to convert method. The parameter `data` contains the information of the conversion event tracked.
 
