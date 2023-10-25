@@ -166,6 +166,6 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
  * @param {*} context should contain at lease sampleRUM object and toCamelCase function
  */
 export async function loadLazy(document, pluginOptions, context) {
-  initConversionTracking(context, document);
+  initCTInternal(context, document);
 }
 
