@@ -63,7 +63,7 @@ function getLinkLabel({ toClassName }, element) {
   return element.title ? toClassName(element.title) : toClassName(element.textContent);
 }
 
-function getConversionNameMetadata( { getMetadata }, element) {
+function getConversionNameMetadata({ getMetadata }, element) {
   const text = element.title || element.textContent;
   return getMetadata(`conversion-name--${text.toLowerCase().replace(/[^0-9a-z]/gi, '-')}-`);
 }
@@ -81,6 +81,78 @@ function findConversionValue(parent, fieldName) {
     .filter((field) => !!field)
     .map((field) => field.value)
     .pop();
+}
+
+/**
+ * Registers conversion listeners according to the metadata configured in the document.
+ * @param {Element} parent element where to find potential event conversion sources
+ * @param {string} defaultFormConversionName In case of form conversions, default
+ * name for the conversion in case there is no conversion name defined
+ * in the document or section metadata. If the form is defined in a fragment
+ * this is typically the path to the fragment.
+ * The parameter is optional, if no value is passed, and conversion
+ * name is not defined in the document or section metadata,
+ * the id of the HTML form element will be used as conversion name
+ */
+// eslint-disable-next-line import/prefer-default-export
+async function initCTInternal(context, parent = document, defaultFormConversionName = '') {
+  const { toClassName, getMetadata } = context;
+  const conversionElements = {
+    form: () => {
+      // Track all forms
+      parent.querySelectorAll('form').forEach((element) => {
+        const section = element.closest('div.section');
+        if (section.dataset.conversionValueField) {
+          const cvField = section.dataset.conversionValueField.trim();
+          // this will track the value of the element with the id specified in
+          // the "Conversion Element" field.
+          // ideally, this should not be an ID, but the case-insensitive name label of the element.
+          sampleRUM.convert(undefined, (cvParent) => findConversionValue(cvParent, cvField), element, ['submit']);
+        }
+        let formConversionName = section.dataset.conversionName || getMetadata('conversion-name');
+        if (!formConversionName) {
+          // if no conversion name is defined in the metadata,
+          // use the conversion name passed as parameter or the form or id
+          formConversionName = defaultFormConversionName
+            ? toClassName(defaultFormConversionName) : element.id;
+        }
+        sampleRUM.convert(formConversionName, undefined, element, ['submit']);
+      });
+    },
+    link: () => {
+      // track all links
+      Array.from(parent.querySelectorAll('a[href]'))
+        .map((element) => ({
+          element,
+          cevent: getConversionNameMetadata(context, element) || getMetadata('conversion-name') || getLinkLabel(context, element),
+        }))
+        .forEach(({ element, cevent }) => {
+          sampleRUM.convert(cevent, undefined, element, ['click']);
+        });
+    },
+    'labeled-link': () => {
+      // track only the links configured in the metadata
+      const linkLabels = getMetadata('conversion-link-labels') || '';
+      const trackedLabels = linkLabels.split(',')
+        .map((p) => p.trim())
+        .map(toClassName);
+
+      Array.from(parent.querySelectorAll('a[href]'))
+        .filter((element) => trackedLabels.includes(getLinkLabel(context, element)))
+        .map((element) => ({
+          element,
+          cevent: getConversionNameMetadata(context, element) || getMetadata('conversion-name') || getLinkLabel(context, element),
+        }))
+        .forEach(({ element, cevent }) => {
+          sampleRUM.convert(cevent, undefined, element, ['click']);
+        });
+    },
+  };
+  const declaredConversionElements = getMetadata('conversion-element') ? getMetadata('conversion-element').split(',').map((ce) => toClassName(ce.trim())) : [];
+
+  Object.keys(conversionElements)
+    .filter((ce) => declaredConversionElements.includes(ce))
+    .forEach((cefn) => conversionElements[cefn]());
 }
 
 // for backwards compatibility. Keep support for initConversionTracking.call(...) invocation
@@ -168,4 +240,3 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
 export async function loadLazy(document, pluginOptions, context) {
   initCTInternal(context, document);
 }
-
