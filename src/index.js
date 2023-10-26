@@ -156,7 +156,7 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
 }
 
 // for backwards compatibility. Keep support for initConversionTracking.call(...) invocation
-// where the context is pased as first parameter and made available in the "this" object.
+// where the context is passed as first parameter and made available in the "this" object.
 export async function initConversionTracking(parent = document, defaultFormConversionName = '') {
   initCTInternal(this, parent, defaultFormConversionName);
 }

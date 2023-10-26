@@ -41,8 +41,18 @@ Load the plugin at the beginning of your `scripts.js`
 ```
   window.hlx.plugins.add('rum-conversion', '/plugins/rum-conversion/src/index.js');
 ```
+:information_source: There are some mechanisms commonly used in AEM projects, that load dynamically in the page content from a different document after the page has been fully loaded.
+e.g.: A contact us form that is displayed in a modal dialog when the user clicks a button.
+If you are using such a mechanism, that includes extra elements in the DOM after `loadLazy()` and you want to track conversions in this included HTML fragment, you need to initialize conversion tracking for that content once it is loaded in the page.
 
-## Initialization for projects without Plugin System (Deprecated)
+```
+  window.hlx.plugins.get('rum-conversion').initConversionTracking(context, fragmentElement, defaultFormConversionName)
+```
+`context` is the  object containing `getMetadata` and `getClassName` methods \
+`fragmentElement` is the parent HTML Element included dynamically where we want to track conversions \
+`defaultFormConversionName` is the name we want to use to track the conversion of a form, when a conversion name is not defined in the section or document metadata. This parameter is optional. Typical use case is to pass the path to the fragment that contains the form.
+
+## Initialization for projects without Plugin System (DEPRECATED)
 ** This approach is deprecated, and kept temporarily for backwards compatibility purposes **
 In your `script.js` find the method `loadLazy()`.
 At the end of the method add the following code:
