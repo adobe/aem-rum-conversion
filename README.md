@@ -39,7 +39,10 @@ git subtree add --squash --prefix docroot/plugins/rum-conversion git@github.com:
 ## Initialization for projects using the Plugin System
 Load the plugin at the beginning of your `scripts.js`
 ```
-  window.hlx.plugins.add('rum-conversion', '/plugins/rum-conversion/src/index.js');
+  window.hlx.plugins.add('rum-conversion', {
+    url: '/plugins/rum-conversion/src/index.js',
+    load: 'lazy',
+  });
 ```
 :information_source: There are some mechanisms commonly used in AEM projects, that load dynamically in the page content from a different document after the page has been fully loaded.
 e.g.: A contact us form that is displayed in a modal dialog when the user clicks a button.
