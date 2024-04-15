@@ -55,8 +55,7 @@ If you are using such a mechanism, that includes extra elements in the DOM after
 `fragmentElement` is the parent HTML Element included dynamically where we want to track conversions \
 `defaultFormConversionName` is the name we want to use to track the conversion of a form, when a conversion name is not defined in the section or document metadata. This parameter is optional. Typical use case is to pass the path to the fragment that contains the form.
 
-## Initialization for projects without Plugin System (DEPRECATED)
-** This approach is deprecated, and kept temporarily for backwards compatibility purposes **
+## Initialization for projects without Plugin System 
 In your `script.js` find the method `loadLazy()`.
 At the end of the method add the following code:
 
