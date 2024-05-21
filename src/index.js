@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Adobe. All rights reserved.
+ * Copyright 2024 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,13 +12,12 @@
 const { sampleRUM } = window.hlx.rum;
 
 /**
-* Registers the 'convert' function to `sampleRUM` which sends
-* variant and convert events upon conversion.
 * The function will register a listener for an element if listenTo parameter is provided.
 * listenTo supports 'submit' and 'click'.
-* If listenTo is not provided, the information is used to track a conversion event.
+* If listenTo is not provided, it tracks a conversion checkpoint in RUM with the data
+* passed as parameters
 */
-sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
+const internalConvert = (cevent, cvalueThunk, element, listenTo = []) => {
   async function trackConversion(celement) {
     try {
       // send conversion event
@@ -52,7 +51,21 @@ sampleRUM.drain('convert', (cevent, cvalueThunk, element, listenTo = []) => {
   } else {
     trackConversion(element, cevent, cvalueThunk);
   }
-});
+};
+
+/**
+ * The function convert acts as a proxy
+ * to support both RUM 1.x and RUM 2.x implementations.
+ * Depending on the RUM version present in the website
+ * the function convert will behave in a different way
+ */
+let convert;
+if (sampleRUM.drain) {
+  sampleRUM.drain('convert', internalConvert);
+  convert = sampleRUM.convert;
+} else {
+  convert = internalConvert;
+}
 
 /**
  * Returns the label used for tracking link clicks
@@ -107,7 +120,7 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
           // this will track the value of the element with the id specified in
           // the "Conversion Element" field.
           // ideally, this should not be an ID, but the case-insensitive name label of the element.
-          sampleRUM.convert(undefined, (cvParent) => findConversionValue(cvParent, cvField), element, ['submit']);
+          convert(undefined, (cvParent) => findConversionValue(cvParent, cvField), element, ['submit']);
         }
         let formConversionName = section.dataset.conversionName || getMetadata('conversion-name');
         if (!formConversionName) {
@@ -116,7 +129,7 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
           formConversionName = defaultFormConversionName
             ? toClassName(defaultFormConversionName) : element.id;
         }
-        sampleRUM.convert(formConversionName, undefined, element, ['submit']);
+        convert(formConversionName, undefined, element, ['submit']);
       });
     },
     link: () => {
@@ -127,7 +140,7 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
           cevent: getConversionNameMetadata(context, element) || getMetadata('conversion-name') || getLinkLabel(context, element),
         }))
         .forEach(({ element, cevent }) => {
-          sampleRUM.convert(cevent, undefined, element, ['click']);
+          convert(cevent, undefined, element, ['click']);
         });
     },
     'labeled-link': () => {
@@ -144,7 +157,7 @@ async function initCTInternal(context, parent = document, defaultFormConversionN
           cevent: getConversionNameMetadata(context, element) || getMetadata('conversion-name') || getLinkLabel(context, element),
         }))
         .forEach(({ element, cevent }) => {
-          sampleRUM.convert(cevent, undefined, element, ['click']);
+          convert(cevent, undefined, element, ['click']);
         });
     },
   };
